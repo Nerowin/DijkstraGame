@@ -1,0 +1,115 @@
+body {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    width: 100vw;
+    height: 100vh;
+    background-color: black;
+    overflow: hidden;
+}
+#frame {
+    z-index: 0;
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: grid;
+    width: fit-content;
+    cursor: inherit;
+    touch-action: none;
+}
+#frame.grid .square {
+    border-color: rgba(255, 255, 255, .1);
+}
+.square {
+    cursor: pointer;
+    position: relative;
+    border: 1px solid transparent;
+    box-sizing: border-box;
+}
+.square .middle {
+    position: absolute;
+    content: "";
+    left: 50%;
+    top: 50%;
+    width: 30%;
+    height: 30%;
+    transform: translate(-50%, -50%);
+}
+.square .middle::before {
+    content: "";
+    position: absolute;
+    background-color: white;
+    width: 4px;
+    height: 4px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    transition: all 0.2s ease-in-out;
+}
+.square .middle:hover::before {
+    border-radius: 50%;
+    width: 40%;
+    height: 40%;
+}
+.layer#player {
+    z-index: 2;
+    position: absolute;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    background-color: blue;
+}
+.direction {
+    position: absolute;
+    width: 30%;
+    height: 30%;
+}
+.direction::before {
+    position: absolute;
+    content: "";
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+}
+.direction.active:hover::before,
+.direction:hover::before {
+    background-color: rgba(255, 255, 255, .4);
+}
+.direction.active::before {
+    background-color: rgba(255, 255, 255, 1);
+}
+.direction.right,
+.direction.left {
+    height: 15%;
+    top: 50%;
+    transform: translateY(-50%);
+}
+.direction.right::before,
+.direction.left::before {
+    top: 50%;
+    height: 1px;
+}
+.direction.right {
+    right: 0;
+}
+.direction.left {
+    left: 0;
+}
+.direction.top,
+.direction.bottom {
+    width: 15%;
+    left: 50%;
+    transform: translateX(-50%);
+}
+.direction.top::before,
+.direction.bottom::before {
+    left: 50%;
+    width: 1px;
+}
+.direction.top {
+    top: 0;
+}
+.direction.bottom {
+    bottom: 0;
+}
