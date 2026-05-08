@@ -1,16 +1,53 @@
 import config from './config.js'
 import { Frame } from './frame.js'
 import { Player } from './player.js'
-import { Dijkstra } from './dijkstra.js'
 
-var frame = new Frame(config)
-var player = new Player(frame)
+var frame = new Frame(config);
+var player = new Player(frame);
 
-frame.draw()
-frame.randomize()
-player.draw()
+frame.draw();
+player.draw();
+frame.randomize();
+setViewMethod(config.screen.viewMethod);
 
+function setViewMethod(method) {
+    config.screen.viewMethod = method;
+    const span = document.getElementById("screen").querySelector("span");
+    if (span) {
+        span.textContent = config.screen.viewMethods[method];
+    }
+}
+function nextViewMethod() {
+    const keys = Object.keys(config.screen.viewMethods);
+    const currentIndex = keys.indexOf(config.screen.viewMethod);
+    setViewMethod(keys[(currentIndex + 1) % keys.length]);
+}
 document.body.addEventListener("click", (e) => {
+    // 0) clic sur un bouton d'action (sidebar)
+    const actionButton = e.target?.closest?.(".action");
+    if (actionButton) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        switch (actionButton.id) {
+            case "screen":
+                nextViewMethod();
+                frame.center();
+                break;
+            case "center":
+                setViewMethod("frame");
+                frame.center(true);
+                break;
+            case "reload":
+                player.reset();
+                frame.randomize();
+                frame.center();
+                break;
+        }
+
+        return;
+    }
+
     // 1) clic sur une direction -> inverse le mur (ancien comportement)
     const directionElem = e.target?.closest?.(".direction");
     if (directionElem) {
@@ -48,19 +85,20 @@ document.body.addEventListener("click", (e) => {
     const y = Number(squareElem.dataset.y);
     if (!Number.isFinite(x) || !Number.isFinite(y)) return;
 
-    const actions = new Dijkstra(frame.toMatrice(), player.getX(), player.getY(), x, y);
-    
-    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    const actions = frame.dijkstra(player.x, player.y, x, y);
 
-    async function playActions(actions, player) {
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    const playActions = async (actions) => {
         for (const action of actions) {
-            player.moveDirection(action);
-
-            await sleep(500); // délai de 500ms
+            const direction = action?.direction ?? action;
+            player.moveDirection(direction);
+            frame.center();
+            await sleep(config.player.speed);
         }
-    }
+    };
 
-    playActions(actions, player);
+    playActions(actions);
 });
 
 window.addEventListener("keydown", (e) => {
@@ -82,6 +120,7 @@ window.addEventListener("keydown", (e) => {
             player.moveBottom()
             break
     }
+    frame.center();
 });
 
 window.addEventListener("wheel", (e) => {
@@ -113,19 +152,24 @@ document.body.addEventListener("pointermove", (e) => {
     if (!config.dragState.active) return;
     if (config.dragState.pointerId !== e.pointerId) return;
 
+    setViewMethod("frame");
+
     const dx = e.clientX - config.dragState.lastX;
     const dy = e.clientY - config.dragState.lastY;
 
     config.dragState.lastX = e.clientX;
     config.dragState.lastY = e.clientY;
 
-    frame.drag(dx, dy);
+    const left = parseFloat(getComputedStyle(frame.elem).left);
+    const top = parseFloat(getComputedStyle(frame.elem).top);
+
+    frame.moveTo(left + dx, top + dy);
 });
 
 function endDrag(e) {
     if (!config.dragState.active) return;
     if (config.dragState.pointerId !== e.pointerId) return;
-  
+    
     config.dragState.active = false;
     config.dragState.pointerId = null;
   

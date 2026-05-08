@@ -1,26 +1,26 @@
-import { Square } from './Square.js'
+import { Square } from './square.js'
 
 export class Frame {
     constructor(config) {
         this.config = config
         this.elem = this.createElement()
-        this.data = []
+        this.nodes = []
         this.init()
     }
 
     init() {
         for (let y = 0; y < this.config.size; y++) {
             for (let x = 0; x < this.config.size; x++) {
-                this.data.push(new Square(this, x, y))
+                this.nodes.push(new Square(this, x, y))
             }
         }
     }
 
     createElement() {
-        const elem = document.createElement("div")
-        elem.innerHTML = ""
-        elem.id = "frame"
-        return elem
+        const elem = document.createElement("div");
+        elem.innerHTML = "";
+        elem.id = "frame";
+        return elem;
     }
 
     setGrid(bool = false) {
@@ -28,15 +28,10 @@ export class Frame {
     }
 
     draw() {
-        document.body.appendChild(this.elem)
-        this.setGrid(this.config.grid)
-        this.center()
-        if (!this.config.screen.centerOnPlayer) {
-            Object.assign(this.elem.style, {
-                transform: "translate(-50%, -50%)",
-            })
-        }
-        this.data.forEach(square => square.draw())
+        document.body.appendChild(this.elem);
+        this.setGrid(this.config.grid);
+        this.nodes.forEach(square => square.draw());
+        this.center();
     }
 
     moveTo(x, y) {
@@ -50,57 +45,47 @@ export class Frame {
 
     }
 
-    center(player) {
-        if (player) {
+    // à faire dans un autre objet
+    center(force = false) {
+        const player = document.getElementById("player");
+        const squareSize = this.config.getSquareSize();
+        const marge = squareSize / 2;
+        const screenMiddleX = this.elem.parentElement.offsetWidth / 2;
+        const screenMiddleY = this.elem.parentElement.offsetHeight / 2;
+        const frameWidth = this.elem.offsetWidth;
+        const frameHeight = this.elem.offsetHeight;
+        const frameMiddleX = frameWidth / 2;
+        const frameMiddleY = frameHeight / 2;
+        const playerX = parseFloat(player?.style.left) | 0;
+        const playerY = parseFloat(player?.style.top) | 0;
+        switch (this.config.screen.viewMethod) {
+            case "player":
+                this.moveTo(
+                    screenMiddleX + frameMiddleX - playerX - marge,
+                    screenMiddleY + frameMiddleY - playerY - marge,
+                )
+                break;
+            case "default":
+                this.moveTo(
+                    screenMiddleX - (playerX - frameMiddleX) * 0.5 - marge / 2,
+                    screenMiddleY - (playerY - frameMiddleY) * 0.5 - marge / 2,
+                )
+                break;
+        }
+        if (force) {
             this.moveTo(
-                window.innerWidth / 2 - player.getX(),
-                window.innerHeight / 2 - player.getY()
-            )
-        } else {
-            this.moveTo(
-                (this.elem.parentElement.offsetWidth - this.elem.offsetWidth) / 2,
-                (this.elem.parentElement.offsetHeight - this.elem.offsetHeight) / 2
+                screenMiddleX,
+                screenMiddleY,
             )
         }
     }
 
     resize() {
-        this.data.forEach(square => square.resize())
-    }
-
-    drag(x, y) {
-        const currentLeft = parseFloat(this.elem.style.left || "0") || 0;
-        const currentTop = parseFloat(this.elem.style.top || "0") || 0;
-        this.elem.style.left = (currentLeft + x) + "px";
-        this.elem.style.top = (currentTop + y) + "px";
+        this.nodes.forEach(square => square.resize())
     }
 
     getSquare(x, y) {
-        return this.data.find(square => square.x === x && square.y === y)
-    }
-
-    toMatrice() {
-        const size = this.config.size
-
-        // Matrice 2D: matrice[y][x] = { x, y, neighbors: [{x,y,action}, ...] }
-        const matrice = Array.from({ length: size }, (_, y) =>
-            Array.from({ length: size }, (_, x) => ({ x, y, neighbors: [] }))
-        )
-
-        // Métadonnées utiles pour convertir des pixels (player.getX/getY) en coords grille
-        matrice.size = size
-        matrice.squareSize = this.config.getSquareSize()
-
-        this.data.forEach((square) => {
-            const cell = matrice[square.y][square.x]
-
-            if (square.canGoRight()) cell.neighbors.push({ x: square.x + 1, y: square.y, action: "right" })
-            if (square.canGoLeft()) cell.neighbors.push({ x: square.x - 1, y: square.y, action: "left" })
-            if (square.canGoTop()) cell.neighbors.push({ x: square.x, y: square.y - 1, action: "up" })
-            if (square.canGoBottom()) cell.neighbors.push({ x: square.x, y: square.y + 1, action: "down" })
-        })
-
-        return matrice
+        return this.nodes.find(square => square.x === x && square.y === y)
     }
 
     randomize() {
@@ -109,7 +94,7 @@ export class Frame {
         const pMirror = this.config.square.pMirror;
 
         // Randomly open edges, while keeping symmetry between neighbors
-        this.data.forEach((square) => {
+        this.nodes.forEach((square) => {
             const { x, y } = square
 
             // Right edge (mirror to neighbor's left)
@@ -132,6 +117,81 @@ export class Frame {
         })
 
         // Redraw directions if already rendered
-        this.data.forEach((square) => square.drawDirections())
+        this.nodes.forEach((square) => square.drawDirections())
+    }
+
+    dijkstra(startX, startY, targetX, targetY) {
+        const size = this.config.size;
+        const n = size * size;
+
+        const idx = (x, y) => y * size + x;
+
+        const inBounds = (x, y) => x >= 0 && x < size && y >= 0 && y < size;
+        if (!inBounds(startX, startY)) return [];
+        if (!inBounds(targetX, targetY)) return [];
+
+        const start = idx(startX, startY);
+        const target = idx(targetX, targetY);
+
+        const INF = Number.POSITIVE_INFINITY;
+        const dist = new Array(n).fill(INF);
+        const prev = new Array(n).fill(-1);
+        const prevAction = new Array(n).fill(null);
+        const visited = new Array(n).fill(false);
+
+        dist[start] = 0;
+
+        for (let iter = 0; iter < n; iter++) {
+            // node u with smallest dist among unvisited nodes
+            let u = -1;
+            let best = INF;
+            for (let i = 0; i < n; i++) {
+                if (!visited[i] && dist[i] < best) {
+                    best = dist[i];
+                    u = i;
+                }
+            }
+
+            if (u === -1) break;
+            if (u === target) break;
+
+            visited[u] = true;
+
+            const ux = u % size;
+            const uy = (u / size) | 0;
+            const square = this.getSquare(ux, uy);
+            if (!square) continue;
+
+            // Explore neighbors based on square boolean directions
+            const tryRelax = (nx, ny, action) => {
+                if (!inBounds(nx, ny)) return;
+                const v = idx(nx, ny);
+                const alt = dist[u] + 1; // uniform cost
+                if (alt < dist[v]) {
+                    dist[v] = alt;
+                    prev[v] = u;
+                    prevAction[v] = action;
+                }
+            };
+
+            // action name corresponds to Player.moveDirection()
+            if (square.left && this.getSquare(ux - 1, uy)) tryRelax(ux - 1, uy, "left");
+            if (square.right && this.getSquare(ux + 1, uy)) tryRelax(ux + 1, uy, "right");
+            if (square.top && this.getSquare(ux, uy - 1)) tryRelax(ux, uy - 1, "up");
+            if (square.bottom && this.getSquare(ux, uy + 1)) tryRelax(ux, uy + 1, "down");
+        }
+
+        if (start !== target && prev[target] === -1) return [];
+
+        // Reconstruct actions: start -> target
+        const actions = [];
+        for (let cur = target; cur !== start; cur = prev[cur]) {
+            const action = prevAction[cur];
+            if (!action) break;
+            actions.push({ direction: action });
+        }
+        actions.reverse();
+
+        return actions;
     }
 }

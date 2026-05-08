@@ -1,9 +1,14 @@
 export default {
     grid: true,
-    size: 5,
+    size: 15,
     screen: {
         ratio: 1,
-        centerOnPlayer: false,
+        viewMethod: "default",
+        viewMethods: {
+            default: "Auto",
+            player: "Joueur",
+            frame: "Libre",
+        },
     },
     square: {
         size: 100,
@@ -11,7 +16,8 @@ export default {
         pMirror: 0.8, // probability to also open the mirrored edge
     },
     player: {
-        size: 25
+        size: 25,
+        speed: 500, // délai de 500ms entre chaque déplacements
     },
     dragState: {
         active: false,
@@ -20,9 +26,9 @@ export default {
         lastY: 0,
     },
     getSquareSize() {
-        return this.square.size * this.screen.ratio
+        return this.square.size * this.screen.ratio;
     },
     getPlayerSize() {
-        return this.player.size * this.screen.ratio
+        return this.player.size * this.screen.ratio;
     }
 }

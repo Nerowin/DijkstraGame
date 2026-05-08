@@ -3,8 +3,7 @@ export class Player {
         this.context = context;
         this.config = this.context.config;
         this.elem = this.createElement();
-        this.x = 0;
-        this.y = 0;
+        this.randomizePos();
     }
 
     createElement() {
@@ -75,7 +74,6 @@ export class Player {
     }
 
     moveDirection(direction) {
-        // direction = "left" | "right" | "up" | "down"
         switch (direction) {
             case "left":
                 return this.moveLeft()
@@ -96,5 +94,15 @@ export class Player {
     getY() {
         let squareSize = this.config.getSquareSize();
         return this.y * squareSize;
+    }
+
+    reset() {
+        this.randomizePos();
+        this.draw();
+    }
+
+    randomizePos() {
+        this.x = Math.floor(Math.random() * this.config.size);
+        this.y = Math.floor(Math.random() * this.config.size);
     }
 }

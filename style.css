@@ -8,18 +8,53 @@ body {
     background-color: black;
     overflow: hidden;
 }
-#frame {
-    z-index: 0;
+.title {
     position: absolute;
-    left: 0;
-    top: 0;
+    top: 50%;
+    width: 100%;
+    text-align: center;
+    margin: 0;
+    z-index: 0;
+    color: rgba(255, 255, 255, .1);
+    text-align: center;
+    font-family: sans-serif;
+    font-size: 10em;
+    transform: translateY(-50%);
+}
+#sidebar {
+    position: absolute;
+    z-index: 3;
+    right: 2rem;
+    top: 2rem;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    gap: .5rem;
+    flex-direction: column;
+    align-items: flex-end;
+}
+.action {
+    cursor: pointer;
+    color: white;
+    background-color: transparent;
+    border: none;
+}
+#frame {
+    z-index: 1;
+    position: absolute;
+    left: 50%;
+    top: 50%;
     display: grid;
     width: fit-content;
     cursor: inherit;
     touch-action: none;
+    transform: translate(-50%, -50%);
+    background: rgba(100, 100, 100, 0.1);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
 }
 #frame.grid .square {
-    border-color: rgba(255, 255, 255, .1);
+    border-color: rgba(100, 100, 100, .1);
 }
 .square {
     cursor: pointer;
